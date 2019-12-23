@@ -1,10 +1,12 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <modelVersion>4.0.0</modelVersion>
 
    <groupId>com.zaxxer</groupId>
    <artifactId>HikariCP</artifactId>
    <version>2.4.5-SNAPSHOT</version>
-   <packaging>bundle</packaging>
+   <!--   <packaging>bundle</packaging>-->
+   <packaging>jar</packaging>
 
    <name>HikariCP</name>
    <description>Ultimate JDBC Connection Pool</description>
@@ -191,116 +193,116 @@
 
    <build>
       <plugins>
-         <plugin>
-            <!-- Generate proxies -->
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>1.4.0</version>
-            <executions>
-               <execution>
-                  <phase>compile</phase>
-                  <!-- phase>generate-test-sources</phase -->
-                  <goals>
-                     <goal>java</goal>
-                  </goals>
-               </execution>
-            </executions>
-            <configuration>
-               <mainClass>com.zaxxer.hikari.util.JavassistProxyFactory</mainClass>
-            </configuration>
-         </plugin>
+         <!--         <plugin>-->
+         <!--            &lt;!&ndash; Generate proxies &ndash;&gt;-->
+         <!--            <groupId>org.codehaus.mojo</groupId>-->
+         <!--            <artifactId>exec-maven-plugin</artifactId>-->
+         <!--            <version>1.4.0</version>-->
+         <!--            <executions>-->
+         <!--               <execution>-->
+         <!--                  <phase>compile</phase>-->
+         <!--                  &lt;!&ndash; phase>generate-test-sources</phase &ndash;&gt;-->
+         <!--                  <goals>-->
+         <!--                     <goal>java</goal>-->
+         <!--                  </goals>-->
+         <!--               </execution>-->
+         <!--            </executions>-->
+         <!--            <configuration>-->
+         <!--               <mainClass>com.zaxxer.hikari.util.JavassistProxyFactory</mainClass>-->
+         <!--            </configuration>-->
+         <!--         </plugin>-->
 
-         <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.7.5.201505241946</version>
-            <executions>
-               <!-- Prepares the property pointing to the JaCoCo runtime agent which is passed as VM argument when Maven the Surefire plugin is executed. -->
-               <execution>
-                  <id>pre-unit-test</id>
-                  <goals>
-                     <goal>prepare-agent</goal>
-                  </goals>
-                  <configuration>
-                     <!-- Sets the path to the file which contains the execution data. -->
-                     <destFile>${project.build.directory}/coverage-reports/jacoco.exec</destFile>
-                     <!-- Sets the name of the property containing the settings for JaCoCo runtime agent. -->
-                     <propertyName>surefireArgLine</propertyName>
-                     <excludes>
-                        <exclude>**/com/zaxxer/hikari/pool/HikariProxy*</exclude>
-                        <exclude>**/com/zaxxer/hikari/metrics/**</exclude>
-                     </excludes>
-                  </configuration>
-               </execution>
-               <!-- Ensures that the code coverage report for unit tests is created after unit tests have been run. -->
-               <execution>
-                  <id>post-unit-test</id>
-                  <phase>test</phase>
-                  <goals>
-                     <goal>report</goal>
-                  </goals>
-                  <configuration>
-                     <!-- Sets the path to the file which contains the execution data. -->
-                     <dataFile>${project.build.directory}/coverage-reports/jacoco.exec</dataFile>
-                     <!-- Sets the output directory for the code coverage report. -->
-                     <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
-                     <excludes>
-                        <exclude>**/com/zaxxer/hikari/pool/HikariProxy*</exclude>
-                        <exclude>**/com/zaxxer/hikari/metrics/**</exclude>
-                     </excludes>
-                  </configuration>
-               </execution>
-            </executions>
-         </plugin>
+         <!--         <plugin>-->
+         <!--            <groupId>org.jacoco</groupId>-->
+         <!--            <artifactId>jacoco-maven-plugin</artifactId>-->
+         <!--            <version>0.7.5.201505241946</version>-->
+         <!--            <executions>-->
+         <!--               &lt;!&ndash; Prepares the property pointing to the JaCoCo runtime agent which is passed as VM argument when Maven the Surefire plugin is executed. &ndash;&gt;-->
+         <!--               <execution>-->
+         <!--                  <id>pre-unit-test</id>-->
+         <!--                  <goals>-->
+         <!--                     <goal>prepare-agent</goal>-->
+         <!--                  </goals>-->
+         <!--                  <configuration>-->
+         <!--                     &lt;!&ndash; Sets the path to the file which contains the execution data. &ndash;&gt;-->
+         <!--                     <destFile>${project.build.directory}/coverage-reports/jacoco.exec</destFile>-->
+         <!--                     &lt;!&ndash; Sets the name of the property containing the settings for JaCoCo runtime agent. &ndash;&gt;-->
+         <!--                     <propertyName>surefireArgLine</propertyName>-->
+         <!--                     <excludes>-->
+         <!--                        <exclude>**/com/zaxxer/hikari/pool/HikariProxy*</exclude>-->
+         <!--                        <exclude>**/com/zaxxer/hikari/metrics/**</exclude>-->
+         <!--                     </excludes>-->
+         <!--                  </configuration>-->
+         <!--               </execution>-->
+         <!--               &lt;!&ndash; Ensures that the code coverage report for unit tests is created after unit tests have been run. &ndash;&gt;-->
+         <!--               <execution>-->
+         <!--                  <id>post-unit-test</id>-->
+         <!--                  <phase>test</phase>-->
+         <!--                  <goals>-->
+         <!--                     <goal>report</goal>-->
+         <!--                  </goals>-->
+         <!--                  <configuration>-->
+         <!--                     &lt;!&ndash; Sets the path to the file which contains the execution data. &ndash;&gt;-->
+         <!--                     <dataFile>${project.build.directory}/coverage-reports/jacoco.exec</dataFile>-->
+         <!--                     &lt;!&ndash; Sets the output directory for the code coverage report. &ndash;&gt;-->
+         <!--                     <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>-->
+         <!--                     <excludes>-->
+         <!--                        <exclude>**/com/zaxxer/hikari/pool/HikariProxy*</exclude>-->
+         <!--                        <exclude>**/com/zaxxer/hikari/metrics/**</exclude>-->
+         <!--                     </excludes>-->
+         <!--                  </configuration>-->
+         <!--               </execution>-->
+         <!--            </executions>-->
+         <!--         </plugin>-->
 
-         <plugin>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>maven-bundle-plugin</artifactId>
-            <version>${felix.bundle.plugin.version}</version>
-            <extensions>true</extensions>
-            <configuration>
-               <instructions>
-                  <Bundle-Name>HikariCP</Bundle-Name>
-                  <Export-Package>
-                     com.zaxxer.hikari,
-                     com.zaxxer.hikari.hibernate,
-                     com.zaxxer.hikari.metrics
-                  </Export-Package>
-                  <Private-Package>com.zaxxer.hikari.*</Private-Package>
-                  <_exportcontents>
-                     com.zaxxer.hikari.pool,
-                     com.zaxxer.hikari.util
-                  </_exportcontents>
-                  <Import-Package>
-                     javax.management,
-                     javax.naming,
-                     javax.naming.spi,
-                     javax.sql,
-                     javax.sql.rowset,
-                     javax.sql.rowset.serial,
-                     javax.sql.rowset.spi,
-                     com.codahale.metrics;resolution:=optional,
-                     com.codahale.metrics.health;resolution:=optional,
-                     org.slf4j;version="[1.6,2)",
-                     org.hibernate;resolution:=optional,
-                     org.hibernate.cfg;resolution:=optional,
-                     org.hibernate.engine.jdbc.connections.spi;resolution:=optional,
-                     org.hibernate.service;resolution:=optional,
-                     org.hibernate.service.spi;resolution:=optional
-                  </Import-Package>
-                  <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
-                  <DynamicImport-Package>*</DynamicImport-Package>
-               </instructions>
-            </configuration>
-            <executions>
-               <!-- This execution makes sure that the manifest is available when the tests are executed -->
-               <execution>
-                  <goals>
-                     <goal>manifest</goal>
-                  </goals>
-               </execution>
-            </executions>
-         </plugin>
+         <!--         <plugin>-->
+         <!--            <groupId>org.apache.felix</groupId>-->
+         <!--            <artifactId>maven-bundle-plugin</artifactId>-->
+         <!--            <version>${felix.bundle.plugin.version}</version>-->
+         <!--            <extensions>true</extensions>-->
+         <!--            <configuration>-->
+         <!--               <instructions>-->
+         <!--                  <Bundle-Name>HikariCP</Bundle-Name>-->
+         <!--                  <Export-Package>-->
+         <!--                     com.zaxxer.hikari,-->
+         <!--                     com.zaxxer.hikari.hibernate,-->
+         <!--                     com.zaxxer.hikari.metrics-->
+         <!--                  </Export-Package>-->
+         <!--                  <Private-Package>com.zaxxer.hikari.*</Private-Package>-->
+         <!--                  <_exportcontents>-->
+         <!--                     com.zaxxer.hikari.pool,-->
+         <!--                     com.zaxxer.hikari.util-->
+         <!--                  </_exportcontents>-->
+         <!--                  <Import-Package>-->
+         <!--                     javax.management,-->
+         <!--                     javax.naming,-->
+         <!--                     javax.naming.spi,-->
+         <!--                     javax.sql,-->
+         <!--                     javax.sql.rowset,-->
+         <!--                     javax.sql.rowset.serial,-->
+         <!--                     javax.sql.rowset.spi,-->
+         <!--                     com.codahale.metrics;resolution:=optional,-->
+         <!--                     com.codahale.metrics.health;resolution:=optional,-->
+         <!--                     org.slf4j;version="[1.6,2)",-->
+         <!--                     org.hibernate;resolution:=optional,-->
+         <!--                     org.hibernate.cfg;resolution:=optional,-->
+         <!--                     org.hibernate.engine.jdbc.connections.spi;resolution:=optional,-->
+         <!--                     org.hibernate.service;resolution:=optional,-->
+         <!--                     org.hibernate.service.spi;resolution:=optional-->
+         <!--                  </Import-Package>-->
+         <!--                  <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>-->
+         <!--                  <DynamicImport-Package>*</DynamicImport-Package>-->
+         <!--               </instructions>-->
+         <!--            </configuration>-->
+         <!--            <executions>-->
+         <!--               &lt;!&ndash; This execution makes sure that the manifest is available when the tests are executed &ndash;&gt;-->
+         <!--               <execution>-->
+         <!--                  <goals>-->
+         <!--                     <goal>manifest</goal>-->
+         <!--                  </goals>-->
+         <!--               </execution>-->
+         <!--            </executions>-->
+         <!--         </plugin>-->
       </plugins>
 
       <pluginManagement>
@@ -308,33 +310,34 @@
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-compiler-plugin</artifactId>
-               <version>3.5.1</version>
+               <version>3.8.1</version>
                <extensions>true</extensions>
                <configuration>
-                  <source>1.7</source>
-                  <target>1.7</target>
+                  <source>1.8</source>
+                  <target>1.8</target>
                </configuration>
             </plugin>
 
-            <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-release-plugin</artifactId>
-               <version>${maven.release.version}</version>
-               <configuration>
-                  <autoVersionSubmodules>true</autoVersionSubmodules>
-                  <tagNameFormat>HikariCP-@{project.version}</tagNameFormat>
-               </configuration>
-            </plugin>
+<!--            <plugin>-->
+<!--               <groupId>org.apache.maven.plugins</groupId>-->
+<!--               <artifactId>maven-release-plugin</artifactId>-->
+<!--               <version>${maven.release.version}</version>-->
+<!--               <configuration>-->
+<!--                  <autoVersionSubmodules>true</autoVersionSubmodules>-->
+<!--                  <tagNameFormat>HikariCP-@{project.version}</tagNameFormat>-->
+<!--               </configuration>-->
+<!--            </plugin>-->
 
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-surefire-plugin</artifactId>
-               <version>2.19.1</version>
+               <version>2.22.2</version>
                <configuration>
                   <!-- Sets the VM argument line used when unit tests are run. -->
-                  <argLine>${surefireArgLine}</argLine>
+                  <!--                  <argLine>${surefireArgLine}</argLine>-->
                   <!-- Skips unit tests if the value of skip.unit.tests property is true -->
-                  <skipTests>${skip.unit.tests}</skipTests>
+                  <!--                  <skipTests>${skip.unit.tests}</skipTests>-->
+                  <skipTests>true</skipTests>
                   <reuseForks>false</reuseForks>
                </configuration>
             </plugin>
@@ -342,7 +345,7 @@
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-source-plugin</artifactId>
-               <version>2.4</version>
+               <version>3.0.1</version>
                <configuration>
                   <!-- outputDirectory>/absolute/path/to/the/output/directory</outputDirectory>
                      <finalName>filename-of-generated-jar-file</finalName -->
@@ -361,7 +364,7 @@
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-javadoc-plugin</artifactId>
-               <version>2.10.3</version>
+               <version>3.0.1</version>
                <configuration>
                   <show>public</show>
                   <!-- excludePackageNames>com.zaxxer.hikari.*</excludePackageNames -->
@@ -383,28 +386,28 @@
    </build>
 
    <profiles>
-      <profile>
-         <id>coverage</id>
-         <build>
-            <plugins>
-               <plugin>
-                  <groupId>org.eluder.coveralls</groupId>
-                  <artifactId>coveralls-maven-plugin</artifactId>
-                  <version>4.1.0</version>
-                  <executions>
-                     <execution>
-                        <id>coveralls</id>
-                        <phase>verify</phase>
-                        <goals>
-                           <goal>jacoco</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                     </execution>
-                  </executions>
-               </plugin>
-            </plugins>
-         </build>
-      </profile>
+      <!--      <profile>-->
+      <!--         <id>coverage</id>-->
+      <!--         <build>-->
+      <!--            <plugins>-->
+      <!--               <plugin>-->
+      <!--                  <groupId>org.eluder.coveralls</groupId>-->
+      <!--                  <artifactId>coveralls-maven-plugin</artifactId>-->
+      <!--                  <version>4.1.0</version>-->
+      <!--                  <executions>-->
+      <!--                     <execution>-->
+      <!--                        <id>coveralls</id>-->
+      <!--                        <phase>verify</phase>-->
+      <!--                        <goals>-->
+      <!--                           <goal>jacoco</goal>-->
+      <!--                        </goals>-->
+      <!--                        <inherited>false</inherited>-->
+      <!--                     </execution>-->
+      <!--                  </executions>-->
+      <!--               </plugin>-->
+      <!--            </plugins>-->
+      <!--         </build>-->
+      <!--      </profile>-->
 
       <profile>
          <id>release-sign-artifacts</id>
@@ -457,4 +460,19 @@
          </dependencies>
       </profile>
    </profiles>
+   <repositories>
+      <repository>
+         <id>maven-ali</id>
+         <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+         <!--         <url>http://repo1.maven.org/maven2/</url>-->
+         <releases>
+            <enabled>true</enabled>
+         </releases>
+         <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+            <checksumPolicy>fail</checksumPolicy>
+         </snapshots>
+      </repository>
+   </repositories>
 </project>
