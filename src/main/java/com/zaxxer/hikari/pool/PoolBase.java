@@ -289,10 +289,15 @@ abstract class PoolBase
       final Properties dataSourceProperties = config.getDataSourceProperties();
 
       DataSource dataSource = config.getDataSource();
+
+      // dataSourceClassName(dsClassName)以及jdbcUrl不需要同时配置,
+
+      // 根据dataSourceClassName以及DataSource判断是否需要初始化dataSource
       if (dsClassName != null && dataSource == null) {
          dataSource = createInstance(dsClassName, DataSource.class);
          PropertyElf.setTargetFromProperties(dataSource, dataSourceProperties);
       }
+      // 若dataSource为null且datasourceClassName为空时,使用jdbcUrl的方式初始化dataSource
       else if (jdbcUrl != null && dataSource == null) {
          dataSource = new DriverDataSource(jdbcUrl, driverClassName, dataSourceProperties, username, password);
       }

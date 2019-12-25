@@ -64,6 +64,7 @@ public final class DriverDataSource implements DataSource
             }
          }
 
+         // 当从DriverManager中获取不到配置的驱动名时，直接根据配置名通过反射配置
          if (driver == null) {
             LOGGER.warn("Registered driver with driverClassName={} was not found, trying direct instantiation.", driverClassName);
             try {
@@ -75,7 +76,7 @@ public final class DriverDataSource implements DataSource
             }
          }
       }
-
+      // 若通过配置直接加载driver失败，则通过url判断是否有合适的driver,不配置driverClassName时
       try {
          if (driver == null) {
             driver = DriverManager.getDriver(jdbcUrl);

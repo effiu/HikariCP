@@ -20,12 +20,21 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.AbstractQueuedLongSynchronizer;
 
 /**
+ * 译： 一个特殊的可以通过单调递增的Sequence进行资源追踪的等待/通知类
  * A specialized wait/notify class useful for resource tracking through the
  * use of a monotonically-increasing long sequence.
  * <p>
+ * 译：当一个共享资源变得可用时，应该无条件的调用signal()方法
  * When a shared resource becomes available the {@link #signal()} method should
  * be called unconditionally.
  * <p>
+ * 译：当一个线程希望获得共享资源时：
+ *      1. 获得当前计数，通过{@link #currentSequence()}方法
+ *      2. 调用{@link #waitUntilSequenceExceeded(long, long)}方法
+ *      3. 若{@link #waitUntilSequenceExceeded(long, long)}方法返回true，
+ *  当前计数应该再次通过{@link #currentSequence()}获得，且尝试获得资源
+ *      4. 如果不能获得共享资源，线程应该使用之前获得的计数再一次调用{@link #waitUntilSequenceExceeded(long, long)}
+ *      5. 若仍然返回false，将会发生timeout超时
  * A thread wishing to acquire a shared resource should: <br>
  * <ul>
  *   <li>Obtain the current sequence from the {@link #currentSequence()} method </li>
@@ -33,7 +42,7 @@ import java.util.concurrent.locks.AbstractQueuedLongSynchronizer;
  *   <li>Upon receiving a <code>true</code> result from {@link #waitUntilSequenceExceeded(long, long)},
  *       the current sequence should again be obtained from the {@link #currentSequence()} method,
  *       and an attempt to acquire the resource should be made. </li>
- *   <li>If the shared resource cannot be acquired, the thread should again call 
+ *   <li>If the shared resource cannot be acquired, the thread should again call
  *       {@link #waitUntilSequenceExceeded(long, long)} with the previously obtained sequence. </li>
  *   <li>If <code>false</code> is received from {@link #waitUntilSequenceExceeded(long, long)}
  *       then a timeout has occurred. </li>
@@ -43,7 +52,7 @@ import java.util.concurrent.locks.AbstractQueuedLongSynchronizer;
  * is monotonically increasing, and only {@link LongAdder#increment()} and {@link LongAdder#sum()}
  * are used, it can be relied on to be Sequentially Consistent.
  *
- * @see <a href="http://en.wikipedia.org/wiki/Sequential_consistency">Java Spec</a> 
+ * @see <a href="http://en.wikipedia.org/wiki/Sequential_consistency">Java Spec</a>
  * @author Brett Wooldridge
  */
 public final class QueuedSequenceSynchronizer
@@ -79,9 +88,10 @@ public final class QueuedSequenceSynchronizer
    }
 
    /**
+    * 译：阻塞当前线程直到计数超过阈值或者达到超时时间
     * Block the current thread until the current sequence exceeds the specified threshold, or
     * until the specified timeout is reached.
-    * 
+    *
     * @param sequence the threshold the sequence must reach before this thread becomes unblocked
     * @param nanosTimeout a nanosecond timeout specifying the maximum time to wait
     * @return true if the threshold was reached, false if the wait timed out

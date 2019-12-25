@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.AbstractQueuedLongSynchronizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,14 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
 {
    private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrentBag.class);
 
+   /**
+    * 内部包含一个基于{@link java.util.concurrent.atomic.LongAdder}的计数器
+    * 以及一个基于{@link AbstractQueuedLongSynchronizer}的FIFO的阻塞锁的同步器
+    */
    private final QueuedSequenceSynchronizer synchronizer;
+   /**
+    * 写时copy的容器
+    */
    private final CopyOnWriteArrayList<T> sharedList;
    private final boolean weakThreadLocals;
 
@@ -104,6 +112,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
             @Override
             protected List<Object> initialValue()
             {
+               // FastList继承ArrayList,没有范围检查(只有出现数组下表越界异常时才会发生扩容)
                return new FastList<>(IConcurrentBagEntry.class, 16);
             }
          };
@@ -111,6 +120,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译: 借BagEntry从bag中，若没有可用BagEntity将会发生阻塞
     * The method will borrow a BagEntry from the bag, blocking for the
     * specified timeout if none are available.
     *
@@ -127,8 +137,9 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
          list = new ArrayList<>(16);
          threadList.set(list);
       }
-
+      // 从尾部获取，类似于剽窃算法(fork/join)
       for (int i = list.size() - 1; i >= 0; i--) {
+         // 移除当前元素，长度减1
          final Object entry = list.remove(i);
          @SuppressWarnings("unchecked")
          final T bagEntry = weakThreadLocals ? ((WeakReference<T>) entry).get() : (T) entry;
@@ -148,9 +159,11 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
          do {
             // scan the shared list
             do {
+               // 获取当前计数值
                startSeq = synchronizer.currentSequence();
                for (T bagEntry : sharedList) {
                   if (bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                     // 如果偷取其他线程的连接
                      // if we might have stolen another thread's new connection, restart the add...
                      if (waiters.get() > 1 && addItemFuture == null) {
                         listener.addBagItem();
@@ -176,6 +189,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：该方法将返还一个bagEntity对象到bag，若不返还将会导致内存溢出
     * This method will return a borrowed object to the bag.  Objects
     * that are borrowed from the bag but never "requited" will result
     * in a memory leak.
@@ -192,11 +206,12 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
       if (threadLocalList != null) {
          threadLocalList.add(weakThreadLocals ? new WeakReference<>(bagEntry) : bagEntry);
       }
-
+      // 释放共享锁
       synchronizer.signal();
    }
 
    /**
+    * 将借来的bagEntity添加到bag中
     * Add a new object to the bag for others to borrow.
     *
     * @param bagEntry an object to add to the bag
@@ -213,6 +228,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译: 从bag中移除bagEntity,该方法仅仅应该在对象通过borrow()方法或者reserve()方法获得的情况下调用
     * Remove a value from the bag.  This method should only be called
     * with objects obtained by <code>borrow(long, TimeUnit)</code> or <code>reserve(T)</code>
     *
@@ -247,6 +263,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译: 该方法根据state生成一个快照
     * This method provides a "snapshot" in time of the BagEntry
     * items in the bag in the specified state.  It does not "lock"
     * or reserve items in any way.  Call <code>reserve(T)</code>
@@ -257,6 +274,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
     */
    public List<T> values(final int state)
    {
+      // 创建一个新的list，并将当前shareList中的对象根据state生成快照
       final ArrayList<T> list = new ArrayList<>(sharedList.size());
       for (final T entry : sharedList) {
          if (entry.getState() == state) {
@@ -268,6 +286,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：生成一个快照
     * This method provides a "snapshot" in time of the bag items.  It
     * does not "lock" or reserve items in any way.  Call <code>reserve(T)</code>
     * on items in the list, or understand the concurrency implications of
@@ -282,6 +301,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：该方法被用来使bag中的对象不可被借
     * The method is used to make an item in the bag "unavailable" for
     * borrowing.  It is primarily used when wanting to operate on items
     * returned by the <code>values(int)</code> method.  Items that are
@@ -299,6 +319,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译: 用于使通过reserve()保留的项目可以再次被借
     * This method is used to make an item reserved via <code>reserve(T)</code>
     * available again for borrowing.
     *
@@ -315,6 +336,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：获取当前正在等待的线程数，底层调用:AQS的等待队列
     * Get the number of threads pending (waiting) for an item from the
     * bag to become available.
     *
@@ -326,6 +348,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：获取当前指定state的bagEntity数量
     * Get a count of the number of items in the specified state at the time of this call.
     *
     * @param state the state of the items to count
@@ -360,6 +383,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
+    * 译：判断是否需要使用以弱引用，根据是否存在一个在当前类和系统类加载器之间的自定义实现的类加载器
     * Determine whether to use WeakReferences based on whether there is a
     * custom ClassLoader implementation sitting between this class and the
     * System ClassLoader.

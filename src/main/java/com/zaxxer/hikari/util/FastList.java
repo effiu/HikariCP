@@ -66,6 +66,7 @@ public final class FastList<T> extends ArrayList<T>
    }
 
    /**
+    * 译：只有在发生数组下表越界时才会发生扩容
     * Add an element to the tail of the FastList.
     *
     * @param element the element to add
@@ -79,6 +80,7 @@ public final class FastList<T> extends ArrayList<T>
       catch (ArrayIndexOutOfBoundsException e) {
          // overflow-conscious code
          final int oldCapacity = elementData.length;
+         // 扩容 *2
          final int newCapacity = oldCapacity << 1;
          @SuppressWarnings("unchecked")
          final T[] newElementData = (T[]) Array.newInstance(clazz, newCapacity);
@@ -117,6 +119,7 @@ public final class FastList<T> extends ArrayList<T>
    }
 
    /**
+    * 译：当移除元素是最后一个时，效率时最高的。是基于==移除，而不是equals()方法，且只移除第一个匹配的元素
     * This remove method is most efficient when the element being removed
     * is the last element.  Equality is identity based, not equals() based.
     * Only the first matching element is removed.
@@ -129,9 +132,11 @@ public final class FastList<T> extends ArrayList<T>
       for (int index = size - 1; index >= 0; index--) {
          if (element == elementData[index]) {
             final int numMoved = size - index - 1;
+            // 当移除元素非最后一个时，要将index后面的元素前移一位
             if (numMoved > 0) {
                System.arraycopy(elementData, index + 1, elementData, index, numMoved);
             }
+            // 将数组最后一个元素置空,size减1
             elementData[--size] = null;
             return true;
          }
@@ -223,7 +228,7 @@ public final class FastList<T> extends ArrayList<T>
                return elementData[index++];
             }
 
-            throw new NoSuchElementException("No more elements in FastList"); 
+            throw new NoSuchElementException("No more elements in FastList");
          }
       };
    }
