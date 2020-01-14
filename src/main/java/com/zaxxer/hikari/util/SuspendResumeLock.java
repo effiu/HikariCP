@@ -19,6 +19,7 @@ package com.zaxxer.hikari.util;
 import java.util.concurrent.Semaphore;
 
 /**
+ * 译: 该类实现了一个支持挂起和释放pool的lock。
  * This class implements a lock that can be used to suspend and resume the pool.  It
  * also provides a faux implementation that is used when the feature is disabled that
  * hopefully gets fully "optimized away" by the JIT.
@@ -27,13 +28,16 @@ import java.util.concurrent.Semaphore;
  */
 public class SuspendResumeLock
 {
+   /**
+    * 虚假的SuspendResumeLock，不做任何事情
+    */
    public static final SuspendResumeLock FAUX_LOCK = new SuspendResumeLock(false) {
       @Override
       public void acquire() {}
 
       @Override
       public void release() {}
-      
+
       @Override
       public void suspend() {}
 
@@ -41,7 +45,14 @@ public class SuspendResumeLock
       public void resume() {}
    };
 
+   /**
+    * 许可证最大数
+    */
    private static final int MAX_PERMITS = 10000;
+   /**
+    * 信号量:可以用来做流量控制，特别是公共资源有限的应用场景。
+    *    协调各个线程保证合理的使用公共资源
+    */
    private final Semaphore acquisitionSemaphore;
 
    /**
@@ -52,6 +63,15 @@ public class SuspendResumeLock
       this(true);
    }
 
+   /**
+    * 默认公平锁版本:
+    *    acquire():获取一个公平锁
+    *    release():归还一个许可证
+    *    resume():恢复所有
+    *    suspend():挂起所有
+    *
+    * @param createSemaphore
+    */
    private SuspendResumeLock(final boolean createSemaphore)
    {
       acquisitionSemaphore = (createSemaphore ? new Semaphore(MAX_PERMITS, true) : null);

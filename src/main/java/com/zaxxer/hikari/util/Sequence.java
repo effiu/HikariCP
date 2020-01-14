@@ -75,6 +75,9 @@ public interface Sequence
       }
    }
 
+   /**
+    * Java 8 新增原子操作类
+    */
    final class Java8Sequence extends LongAdder implements Sequence {
       @Override
       public long get() {

@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 一个future任务，用于在将来报告连接泄漏(超过maxLifeTime未被销毁)，若连接被销毁则取消该任务
  * A Runnable that is scheduled in the future to report leaks.  The ScheduledFuture is
  * cancelled if the connection is closed before the leak time expires.
  *
@@ -64,7 +65,7 @@ class ProxyLeakTask implements Runnable
    private ProxyLeakTask()
    {
    }
-   
+
    ProxyLeakTask schedule(final PoolEntry bagEntry)
    {
       return (leakDetectionThreshold == 0) ? NO_LEAK : new ProxyLeakTask(this, bagEntry);
@@ -79,7 +80,7 @@ class ProxyLeakTask implements Runnable
    @Override
    public void run()
    {
-      final StackTraceElement[] stackTrace = exception.getStackTrace(); 
+      final StackTraceElement[] stackTrace = exception.getStackTrace();
       final StackTraceElement[] trace = new StackTraceElement[stackTrace.length - 5];
       System.arraycopy(stackTrace, 5, trace, 0, trace.length);
 

@@ -103,6 +103,11 @@ abstract class PoolBase
    //                           JDBC methods
    // ***********************************************************************
 
+   /**
+    * 译：悄悄或者偷偷的关闭连接，后台线程关闭连接
+    * @param connection
+    * @param closureReason
+    */
    void quietlyCloseConnection(final Connection connection, final String closureReason)
    {
       if (connection != null) {
@@ -310,6 +315,11 @@ abstract class PoolBase
       this.dataSource = dataSource;
    }
 
+   /**
+    * 创建数据库连接,
+    * @return
+    * @throws Exception
+    */
    Connection newConnection() throws Exception
    {
       Connection connection = null;
@@ -318,6 +328,7 @@ abstract class PoolBase
          String password = config.getPassword();
 
          connection = (username == null) ? dataSource.getConnection() : dataSource.getConnection(username, password);
+         // 设置一些初始值或者状态，例如超时时间、自动提交、事物隔离级别、连接检查等
          setupConnection(connection);
          lastConnectionFailure.set(null);
          return connection;
@@ -330,6 +341,7 @@ abstract class PoolBase
    }
 
    /**
+    * 译:设置连接的初始状态,包括网络超时时间、驱动版本、连接的一些属性等等
     * Setup a connection initial state.
     *
     * @param connection a Connection
@@ -338,31 +350,34 @@ abstract class PoolBase
    private void setupConnection(final Connection connection) throws SQLException
    {
       if (networkTimeout == UNINITIALIZED) {
+         // validationTimeout控制测试连接是否活跃最长时间，必须小于connectionTimeout,最小值为250ms，默认5000ms
          networkTimeout = getAndSetNetworkTimeout(connection, validationTimeout);
       }
       else {
          setNetworkTimeout(connection, validationTimeout);
       }
-
+      // 驱动检查，连接检查方式
       checkDriverSupport(connection);
-
+      // 设置只读与事物自动提交
       connection.setReadOnly(isReadOnly);
       connection.setAutoCommit(isAutoCommit);
-
+      // 设置默认的事物隔离
       if (transactionIsolation != defaultTransactionIsolation) {
          connection.setTransactionIsolation(transactionIsolation);
       }
-
+      // catalog:为支持catalog概念的db设置默认的catalog
+      // MySQL、Oracle都不支持catalog，支持的有DB2、MS SQL Server
       if (catalog != null) {
          connection.setCatalog(catalog);
       }
-
+      // connectionInitSql是创建连接后执行的SQL，用于判断连接是否成功，默认为空
       executeSql(connection, config.getConnectionInitSql(), true);
 
       setNetworkTimeout(connection, networkTimeout);
    }
 
    /**
+    * 执行isValid()或者连接检查
     * Execute isValid() or connection test query.
     *
     * @param connection a Connection to check
@@ -370,6 +385,7 @@ abstract class PoolBase
    private void checkDriverSupport(final Connection connection) throws SQLException
    {
       if (!isValidChecked) {
+         // JDBC4支持isValid()
          if (isUseJdbc4Validation) {
             try {
                connection.isValid(1);
@@ -380,6 +396,7 @@ abstract class PoolBase
             }
          }
          else {
+            // 旧版JDBC，则根据connectionTestQuery进行连接检查
             try {
                executeSql(connection, config.getConnectionTestQuery(), false);
             }
@@ -388,8 +405,9 @@ abstract class PoolBase
                throw e;
             }
          }
-
+         // 获取默认的事物隔离级别
          defaultTransactionIsolation = connection.getTransactionIsolation();
+         // 初始化连接池隔离界别为默认的事物隔离级别
          if (transactionIsolation == -1) {
             transactionIsolation = defaultTransactionIsolation;
          }
@@ -421,6 +439,7 @@ abstract class PoolBase
    }
 
    /**
+    * 译：设置network timeout超时时间,如果isUseNetworkTimeout为true且驱动支持该属性，返回之前的network timeout值
     * Set the network timeout, if <code>isUseNetworkTimeout</code> is <code>true</code> and the
     * driver supports it.  Return the pre-existing value of the network timeout.
     *
@@ -432,12 +451,15 @@ abstract class PoolBase
    {
       if (isNetworkTimeoutSupported != FALSE) {
          try {
+            // network timeout原值
             final int originalTimeout = connection.getNetworkTimeout();
+            // 设置为新值
             connection.setNetworkTimeout(netTimeoutExecutor, (int) timeoutMs);
             isNetworkTimeoutSupported = TRUE;
             return originalTimeout;
          }
          catch (Throwable e) {
+            // 未定义isNetworkTimeoutSupported的情况
             if (isNetworkTimeoutSupported == UNINITIALIZED) {
                isNetworkTimeoutSupported = FALSE;
 
@@ -456,6 +478,7 @@ abstract class PoolBase
    }
 
    /**
+    * 译：设置网络超时时间，
     * Set the network timeout, if <code>isUseNetworkTimeout</code> is <code>true</code> and the
     * driver supports it.
     *

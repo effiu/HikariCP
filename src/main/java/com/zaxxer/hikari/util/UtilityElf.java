@@ -105,6 +105,7 @@ public final class UtilityElf
          threadFactory = new DefaultThreadFactory(threadName, true);
       }
 
+      // corePoolSize为1，堵塞队列大小为maximumPoolSize,拒绝策略为丢弃，corePoolSize = maximumPoolSize
       LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(queueSize);
       ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 5, SECONDS, queue, threadFactory, policy);
       executor.allowCoreThreadTimeOut(true);

@@ -120,7 +120,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    }
 
    /**
-    * 译: 借BagEntry从bag中，若没有可用BagEntity将会发生阻塞
+    * 译: 借PoolEntry从bag中，若没有可用BagEntity将会发生阻塞
     * The method will borrow a BagEntry from the bag, blocking for the
     * specified timeout if none are available.
     *
@@ -202,16 +202,17 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    {
       bagEntry.lazySet(STATE_NOT_IN_USE);
 
+      // 将连接加入到连接池中
       final List<Object> threadLocalList = threadList.get();
       if (threadLocalList != null) {
          threadLocalList.add(weakThreadLocals ? new WeakReference<>(bagEntry) : bagEntry);
       }
-      // 释放共享锁
+      // 释放一个计数
       synchronizer.signal();
    }
 
    /**
-    * 将借来的bagEntity添加到bag中
+    * 译:将借来的bagEntity添加到bag中
     * Add a new object to the bag for others to borrow.
     *
     * @param bagEntry an object to add to the bag
@@ -393,7 +394,8 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    private boolean useWeakThreadLocals()
    {
       try {
-         if (System.getProperty("com.zaxxer.hikari.useWeakReferences") != null) {   // undocumented manual override of WeakReference behavior
+         // undocumented manual override of WeakReference behavior
+         if (System.getProperty("com.zaxxer.hikari.useWeakReferences") != null) {
             return Boolean.getBoolean("com.zaxxer.hikari.useWeakReferences");
          }
 

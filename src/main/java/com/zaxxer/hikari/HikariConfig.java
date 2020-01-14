@@ -63,6 +63,9 @@ public class HikariConfig implements HikariConfigMXBean
    private volatile long connectionTimeout;
    private volatile long validationTimeout;
    private volatile long idleTimeout;
+   /**
+    * 此属性控制在记录表示可能的连接泄漏的消息之前，连接可以从池中移出的时间,默认禁用
+    */
    private volatile long leakDetectionThreshold;
    private volatile long maxLifetime;
    private volatile int maxPoolSize;
@@ -409,6 +412,7 @@ public class HikariConfig implements HikariConfigMXBean
    }
 
    /**
+    * 译：判断当不能创建最小连接数时连接池的构造器抛出异常
     * Get whether or not the construction of the pool should throw an exception
     * if the minimum number of connections cannot be created.
     *
