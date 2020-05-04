@@ -65,7 +65,7 @@ final class PoolEntry implements IConcurrentBagEntry {
    private volatile ScheduledFuture<?> endOfLife;
 
    /**
-    * TODO 连接执行的SQL语句数
+    * statement数量
     */
    private final FastList<Statement> openStatements;
 
@@ -112,7 +112,7 @@ final class PoolEntry implements IConcurrentBagEntry {
       this.state = new AtomicInteger();
       // 最后借出时间默认为当前的时间戳，即创建时间
       this.lastAccessed = ClockSource.INSTANCE.currentTime();
-      //TODO 默认最多创建16个Statements
+      //默认最多创建16个Statements
       this.openStatements = new FastList<>(Statement.class, 16);
    }
 

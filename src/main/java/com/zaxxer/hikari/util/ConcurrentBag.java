@@ -35,6 +35,15 @@ import static com.zaxxer.hikari.util.ConcurrentBag.IConcurrentBagEntry.STATE_REM
 import static com.zaxxer.hikari.util.ConcurrentBag.IConcurrentBagEntry.STATE_RESERVED;
 
 /**
+ * 译：这个一个特殊的高效实现了{@link java.util.concurrent.LinkedBlockingDeque}和
+ * {@link java.util.concurrent.LinkedTransferQueue}的并发bag，用于连接池。{@link ConcurrentBag}使用
+ * {@link ThreadLocal}存储以尽可能地去避免被锁定，但是当ThreadLocal中没有可用item时将会扫描common集合。
+ * 当借用线程中没有可用连接时，ThreadLocal中Not-in-use的item可以被"stolen"。这是一个定制化的无锁的实现,
+ * 使用{@link AbstractQueuedLongSynchronizer}同步器管理跨线程的通信。
+ *
+ * 注意: item可以从bag中被借出，其实际上没有从集合中被移出，所以尽管引用被放弃，但gc不会出现。
+ * 因此必须注意归还被借出的对象，否则将会导致内存溢出，仅仅remove方法可以从bag中完全移除对象
+ *
  * This is a specialized concurrent bag that achieves superior performance
  * to LinkedBlockingQueue and LinkedTransferQueue for the purposes of a
  * connection pool.  It uses ThreadLocal storage when possible to avoid
@@ -69,11 +78,17 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    private final CopyOnWriteArrayList<T> sharedList;
    private final boolean weakThreadLocals;
 
+   /**
+    * 线程池线程持有该list
+    */
    private final ThreadLocal<List<Object>> threadList;
    private final IBagStateListener listener;
    private final AtomicInteger waiters;
    private volatile boolean closed;
 
+   /**
+    * poolEntry的状态
+    */
    public interface IConcurrentBagEntry
    {
       int STATE_NOT_IN_USE = 0;
@@ -86,12 +101,16 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
       int getState();
    }
 
+   /**
+    * 实际用于将任务添加到线程池中去，例如创建PoolEntry
+    */
    public interface IBagStateListener
    {
       Future<Boolean> addBagItem();
    }
 
    /**
+    * 构造方法，初始化成员变量
     * Construct a ConcurrentBag with the specified listener.
     *
     * @param listener the IBagStateListener to attach to this bag
@@ -99,11 +118,13 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    public ConcurrentBag(final IBagStateListener listener)
    {
       this.listener = listener;
+      // 是否使用弱引用
       this.weakThreadLocals = useWeakThreadLocals();
 
       this.waiters = new AtomicInteger();
       this.sharedList = new CopyOnWriteArrayList<>();
       this.synchronizer = new QueuedSequenceSynchronizer();
+      // 若支持弱引用则使用ThreadLocal存储连接PoolEntry
       if (weakThreadLocals) {
          this.threadList = new ThreadLocal<>();
       }
@@ -143,6 +164,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
          final Object entry = list.remove(i);
          @SuppressWarnings("unchecked")
          final T bagEntry = weakThreadLocals ? ((WeakReference<T>) entry).get() : (T) entry;
+         // 若threadList中的poolEntry非空且set state成功
          if (bagEntry != null && bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
             return bagEntry;
          }
@@ -154,6 +176,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
       final long startScan = System.nanoTime();
       final long originTimeout = timeout;
       long startSeq;
+      // 等待+1
       waiters.incrementAndGet();
       try {
          do {
@@ -166,9 +189,10 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
                      // 如果偷取其他线程的连接
                      // if we might have stolen another thread's new connection, restart the add...
                      if (waiters.get() > 1 && addItemFuture == null) {
+                        //TODO 为什么poolEntry的创建任务添加到任务池中去, shareList中存在可用PoolEntry
                         listener.addBagItem();
                      }
-
+                     // 此时sharedList仍有有其引用，所以不会被gc回收
                      return bagEntry;
                   }
                }
@@ -177,7 +201,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
             if (addItemFuture == null || addItemFuture.isDone()) {
                addItemFuture = listener.addBagItem();
             }
-
+            // 更新timeout，用于超时结束循环
             timeout = originTimeout - (System.nanoTime() - startScan);
          } while (timeout > 10_000L && synchronizer.waitUntilSequenceExceeded(startSeq, timeout));
       }
@@ -202,7 +226,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
    {
       bagEntry.lazySet(STATE_NOT_IN_USE);
 
-      // 将连接加入到连接池中
+      // 将连接添加到连接池中
       final List<Object> threadLocalList = threadList.get();
       if (threadLocalList != null) {
          threadLocalList.add(weakThreadLocals ? new WeakReference<>(bagEntry) : bagEntry);

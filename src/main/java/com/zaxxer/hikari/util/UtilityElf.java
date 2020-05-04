@@ -102,6 +102,7 @@ public final class UtilityElf
    public static ThreadPoolExecutor createThreadPoolExecutor(final int queueSize, final String threadName, ThreadFactory threadFactory, final RejectedExecutionHandler policy)
    {
       if (threadFactory == null) {
+         // daemon表示是否是支持型线程，是否被用来作为程序中后台调度等工作
          threadFactory = new DefaultThreadFactory(threadName, true);
       }
 

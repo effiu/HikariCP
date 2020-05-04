@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
+ * 译：单调递增的长整型计数器
  * A monotonically increasing long sequence.
  *
  * @author brettw
@@ -31,11 +32,13 @@ import java.util.concurrent.atomic.LongAdder;
 public interface Sequence
 {
    /**
+    * 译：当前计数器计数+1
     * Increments the current sequence by one.
     */
    void increment();
 
    /**
+    * 译：获取当前计数
     * Get the current sequence.
     *
     * @return the current sequence.
@@ -43,6 +46,7 @@ public interface Sequence
    long get();
 
    /**
+    * 译：工厂类，用于创建特定的ClockSource
     * Factory class used to create a platform-specific ClockSource.
     */
    final class Factory
@@ -50,19 +54,21 @@ public interface Sequence
       public static Sequence create()
       {
          try {
+            // java.util.concurrent.atomic.LongAdder时jdk8新增类
             if (Sequence.class.getClassLoader().loadClass("java.util.concurrent.atomic.LongAdder") != null && !Boolean.getBoolean("com.zaxxer.hikari.useAtomicLongSequence")) {
                return new Java8Sequence();
             }
          }
          catch (ClassNotFoundException e) {
             try {
+               // 当jdk8环境下LongAddr出现异常时，使用com.codahale.metrics.LongAdder
                Class<?> longAdderClass = Sequence.class.getClassLoader().loadClass("com.codahale.metrics.LongAdder");
                return new DropwizardSequence(longAdderClass);
             }
             catch (Exception e2) {
             }
          }
-
+         // 默认使用jdk7下的AtomicLong作为计数器
          return new Java7Sequence();
       }
 

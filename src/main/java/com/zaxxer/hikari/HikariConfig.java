@@ -58,23 +58,46 @@ public class HikariConfig implements HikariConfigMXBean
    private static final AtomicInteger POOL_NUMBER;
    private static boolean unitTest;
 
-   // Properties changeable at runtime through the MBean
-   //
+   /**
+    * Properties changeable at runtime through the MBean
+    * 控制客户端等待来自连接池的连接的最大毫秒数，最小值为250ms，默认值为30000s，超时抛出SQLException
+    */
    private volatile long connectionTimeout;
+
+   /**
+    * 控制将测试连接的活动性的最长时间,此值必须小于connectionTimeout
+    */
    private volatile long validationTimeout;
+
+   /**
+    * 控制池中处于空闲状态的连接的最长时间。仅仅当minIdle小于maxPoolSize时才会起作用
+    */
    private volatile long idleTimeout;
    /**
     * 此属性控制在记录表示可能的连接泄漏的消息之前，连接可以从池中移出的时间,默认禁用
     */
    private volatile long leakDetectionThreshold;
+   /**
+    * 连接池中连接的最大生存期，同时也遵守idleTimeout设置的连接最长时间
+    */
    private volatile long maxLifetime;
+   /**
+    *
+    */
    private volatile int maxPoolSize;
    private volatile int minIdle;
 
    // Properties NOT changeable at runtime
    //
    private String catalog;
+   /**
+    * 此属性设置一个SQL语句，该语句将在每次创建新连接后执行，然后再将其添加到池中。
+    * 例如, set names utf8mb4
+    */
    private String connectionInitSql;
+   /**
+    * 若支持JDBC4，则不推荐设置该属性。是针对不支持JDBC4的驱动程序在从池中提供连接之前执行的查询，以验证与数据库的连接仍然有效。
+    */
    private String connectionTestQuery;
    private String dataSourceClassName;
    private String dataSourceJndiName;
@@ -84,8 +107,12 @@ public class HikariConfig implements HikariConfigMXBean
    private String poolName;
    private String transactionIsolationName;
    private String username;
+   /**
+    * 连接池中的连接是否是自动提交
+    */
    private boolean isAutoCommit;
    private boolean isReadOnly;
+
    private boolean isInitializationFailFast;
    private boolean isIsolateInternalQueries;
    private boolean isRegisterMbeans;
@@ -106,6 +133,7 @@ public class HikariConfig implements HikariConfigMXBean
       AtomicInteger poolNumber = (AtomicInteger) sysProps.get("com.zaxxer.hikari.pool_number");
       if (poolNumber == null) {
          POOL_NUMBER = new AtomicInteger();
+         // 将POOL_NUMBER设置为JVM中的一个全局属性
          sysProps.put("com.zaxxer.hikari.pool_number", POOL_NUMBER);
       }
       else {
@@ -131,6 +159,7 @@ public class HikariConfig implements HikariConfigMXBean
       isAutoCommit = true;
       isInitializationFailFast = true;
 
+      // 通过hikaricp.configurationFile设置配置文件
       String systemProp = System.getProperty("hikaricp.configurationFile");
       if (systemProp != null) {
          loadProperties(systemProp);
@@ -412,7 +441,7 @@ public class HikariConfig implements HikariConfigMXBean
    }
 
    /**
-    * 译：判断当不能创建最小连接数时连接池的构造器抛出异常
+    * 译：当连接池数量不能达到最小连接数时连接池的构造器抛出异常
     * Get whether or not the construction of the pool should throw an exception
     * if the minimum number of connections cannot be created.
     *
@@ -424,6 +453,7 @@ public class HikariConfig implements HikariConfigMXBean
    }
 
    /**
+    * 译：当连接池不能达到最小连接数时是否跑出异常
     * Set whether or not the construction of the pool should throw an exception
     * if the minimum number of connections cannot be created.
     *
@@ -758,11 +788,16 @@ public class HikariConfig implements HikariConfigMXBean
       this.threadFactory = threadFactory;
    }
 
+   /**
+    * invoke by HikariDataSource
+    */
    public void validate()
    {
+      // poolName的默认生成方式
       if (poolName == null) {
          poolName = "HikariPool-" + POOL_NUMBER.getAndIncrement();
       }
+      // isRegisterMbeans默认为false
       else if (isRegisterMbeans && poolName.contains(":")) {
          throw new IllegalArgumentException("poolName cannot contain ':' when used with JMX");
       }
@@ -812,16 +847,17 @@ public class HikariConfig implements HikariConfigMXBean
 
    private void validateNumerics()
    {
+      // maxLifetime不能小于30s
       if (maxLifetime != 0 && maxLifetime < SECONDS.toMillis(30)) {
          LOGGER.warn("{} - maxLifetime is less than 30000ms, setting to default {}ms.", poolName, MAX_LIFETIME);
          maxLifetime = MAX_LIFETIME;
       }
-
+      // 若idleTimeout大于maxLifetime且maxLifetime大于0，则idleTimeout=0
       if (idleTimeout + SECONDS.toMillis(1) > maxLifetime && maxLifetime > 0) {
          LOGGER.warn("{} - idleTimeout is close to or more than maxLifetime, disabling it.", poolName);
          idleTimeout = 0;
       }
-
+      // idleTimeout必须大于10
       if (idleTimeout != 0 && idleTimeout < SECONDS.toMillis(10)) {
          LOGGER.warn("{} - idleTimeout is less than 10000ms, setting to default {}ms.", poolName, IDLE_TIMEOUT);
          idleTimeout = IDLE_TIMEOUT;
@@ -834,22 +870,25 @@ public class HikariConfig implements HikariConfigMXBean
          }
       }
 
+      // connectionTimeout必须大于250ms
       if (connectionTimeout < 250) {
          LOGGER.warn("{} - connectionTimeout is less than 250ms, setting to {}ms.", poolName, CONNECTION_TIMEOUT);
          connectionTimeout = CONNECTION_TIMEOUT;
       }
 
+      // validationTimeout必须大于250ms
       if (validationTimeout < 250) {
          LOGGER.warn("{} - validationTimeout is less than 250ms, setting to {}ms.", poolName, VALIDATION_TIMEOUT);
          validationTimeout = VALIDATION_TIMEOUT;
       }
-
+      // 若maxPoolSize小于0，则maxPoolSize = minIdle
       if (maxPoolSize < 0) {
          if (minIdle < 0) {
             minIdle = 10;
          }
          maxPoolSize = minIdle;
       }
+      // 若minIdle小于0或者大于maxPoolSize，则minIdle = maxPoolSize
       else if (minIdle < 0 || minIdle > maxPoolSize) {
          minIdle = maxPoolSize;
       }
@@ -888,6 +927,7 @@ public class HikariConfig implements HikariConfigMXBean
          if (is != null) {
             Properties props = new Properties();
             props.load(is);
+            // 通过反射初始化配置信息
             PropertyElf.setTargetFromProperties(this, props);
          }
          else {
